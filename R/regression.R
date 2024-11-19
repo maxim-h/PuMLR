@@ -33,7 +33,6 @@ logsig <- function(x) {
 }
 
 
-
 #' Numerically stable `plogis(t) - y`
 #'
 #' This is a helper function to make the gradient of the logistic regression loss
@@ -50,11 +49,11 @@ logsig <- function(x) {
 sigm_b <- function(t, y) {
   ifelse(
     test = t < 0,
-    yes = {
+    yes = { # maybe only this branch is needed
       exp_t <- exp(t)
       ((1 - y) * exp_t - y) / (1 + exp_t)
     },
-    no = {
+    no = { # this is to prevent exp overflow, which seems to be more of a python problem.
       exp_nt <- exp(-t)
       ((1 - y) - y * exp_nt) / (1 + exp_nt)
     }
@@ -65,7 +64,7 @@ sigm_b <- function(t, y) {
 
 logNpexp <- function(z, x) {
   ex <- exp(-x)
-  ifelse(z > ex, log(z) + log1p(ex/z), -x + log1p(z*exp(x)))
+  ifelse(z > ex, log(z) + log1p(ex / z), -x + log1p(z * exp(x)))
 }
 
 
@@ -84,7 +83,7 @@ logNpexp <- function(z, x) {
 #' @examples
 g_slr_list <- function(x, y, w) {
   t <- x %*% w
-  s <- sigm_b(t, y)
+  s <- sigm_b(t, y) # might be unnecessary in R. exp doesn't overflow
   list(
     "objective" = sum(-logsig(t) + (1 - y) * (t)),
     "gradient" = c(t(x) %*% s)
@@ -92,118 +91,28 @@ g_slr_list <- function(x, y, w) {
 }
 
 
-# g_mlr_list1 <- function(x, s, w) {
-#   w_lr <- w[2:length(w)]
-#   b <- w[1]
-#   t <- x %*% w_lr
-#   list(
-#     "objective" = sum(-s*log(1 + b^2 + exp(-t)) + (1-s)*(log(b^2 + exp(-t))-log(1+ b^2 + exp(-t)))),
-#     "gradient" = c(
-#       (2*b*exp(t)*(exp(t)*(b^2*s + s + 1) + s))/((b^2*exp(t) + 1)*((b^2+1)*exp(t)+1)),
-#       # (exp(-t)*(s*(x+b^2 + t(x)%*%exp(-t))))/()
-#       # s%*%x/((b^2 + 1)*exp(t)) + ((s-1) %*% x)/((b^2 + 1)*exp(t))
-#       )
-#   )
-# }
-
-
-g_mlr1<- function(x, s, w) {
+g_mlr1_list <- function(x, s, w) {
   w_lr <- w[2:length(w)]
   b <- w[1]
   t <- x %*% w_lr
-  sum(-s*logNpexp(1 + b^2, t) + (1-s)*(logNpexp(b^2, t)-logNpexp(1+ b^2, t)))
+  list(
+    "objective" = -sum(-s * logNpexp(1 + b^2, t) + (1 - s) * (logNpexp(b^2, t) - logNpexp(1 + b^2, t))),
+    "gradient" = -c(
+      sum((1 - s) * (2 * b) / (b^2 + exp(-t)) - 2 * b / (1 + b^2 + exp(-t))),
+      t(x) %*% (exp(-t) * (1 / (1 + b^2 + exp(-t)) + (s - 1) / (b^2 + exp(-t))))
+    )
+  )
 }
 
 
-g_mlr2<- function(x, s, w, c_hat) {
+g_mlr2_list <- function(x, s, w, c_hat) {
   t <- x %*% w
-  logCpexpT <- logNpexp(1-c_hat,t)
-  # sum(s*(log(c_hat) - logsig(-t)) + (1-s)*(logNpexp(1-c_hat,t) - logsig(-t)))
-  sum(s*(log(c_hat) - logCpexpT) + logCpexpT - logsig(-t))
-  # sum(s*(log(c_hat) - logsig(-t)) + (1-s)*(logNpexp(1-c_hat,t) - logsig(-t)))
-}
-g_mlr2_grad <- function(x, s, w, c_hat) {
-  t <- x %*% w
-  sum(s*(log(c_hat) - logsig(-t)) + (1-s)*(logNpexp(1-c_hat,t) - logsig(-t)))
-}
-# eval_f_mlr2 <- function(w) {
-#   -g_mlr2(x = xm, s = tr_data$s, w = w, c_hat = c_hat)
-# }
-
-
-# slr(x = tr_data %>% select(x1, x2), y = tr_data$y)
-
-
-# tr_data %>% select(x1, x2)
-#
-# tr_data
-#
-# xm <- cbind(intercept = 1, as.matrix(tr_data %>% select(x1, x2)))
-# x0 <- rep(.1, ncol(xm))
-
-
-
-# opts <- list("algorithm" = "NLOPT_LD_LBFGS",
-# opts <- list("algorithm" = "NLOPT_LN_COBYLA",
-#   "xtol_rel" = 1.0e-12, "maxeval" = 1e4
-# )
-
-# res <- nloptr(
-#   x0 = x0,
-#   eval_f = eval_f_mlr2,
-#   opts = opts
-# )
-# res
-#
-
-mlr <- function(x, s) {
-  xm <- cbind(intercept = 1, as.matrix(x))
-  x0 <- rep(0.1, ncol(xm)+1)
-
-  opts <- list("algorithm" = "NLOPT_LN_COBYLA",
-    "xtol_rel" = 1.0e-12, "maxeval" = 1e4
+  logCpexpT <- logNpexp(1 - c_hat, t)
+  list(
+    "objective" = -sum(s * (log(c_hat) - logCpexpT) + logCpexpT + logsig(t)),
+    "gradient" = -c(t(x) %*% ((s - 1) * (exp(-t) / (1 - c_hat + exp(-t))) + (exp(-t) / (1 + exp(-t)))))
   )
-
-  eval_f_mlr1 <- function(w) {
-    -g_mlr1(x = xm, s = s, w = w)
-  }
-
-  res1 <- nloptr(
-    x0 = x0,
-    eval_f = eval_f_mlr1,
-    opts = opts
-  )
-
-  if (res1$status < 0) {
-    stop(simpleError(paste("NLopt returned an error code:", res1$status, res1$message)))
-  }
-
-  c_hat <- 1/(1+res1$solution[1]^2)
-
-  x0 <- rep(.1, ncol(xm))
-
-  eval_f_mlr2 <- function(w) {
-    -g_mlr2(x = xm, s = s, w = w, c_hat = c_hat)
-  }
-
-  res2 <- nloptr(
-    x0 = x0,
-    eval_f = eval_f_mlr2,
-    opts = opts
-  )
-
-  if (res2$status < 0) {
-    stop(simpleError(paste("NLopt returned an error code:", res2$status, res2$message)))
-  }
-
-  coefs <- res2$solution
-  names(coefs) <- colnames(xm)
-  return(coefs)
 }
-
-
-# mlr(x = tr_data %>% select(x1,x1), s = tr_data$s)
-
 
 
 #' Simple Logistic Regression
@@ -245,3 +154,48 @@ slr <- function(x, y) {
 }
 
 
+mlr <- function(x, s) {
+  xm <- cbind(intercept = 1, as.matrix(x))
+  x0 <- rep(0.1, ncol(xm) + 1)
+
+  opts <- list(
+    "algorithm" = "NLOPT_LD_LBFGS",
+    "xtol_rel" = 1.0e-12, "maxeval" = 1e4
+  )
+
+  eval_f_mlr1 <- function(w) {
+    g_mlr1_list(x = xm, s = s, w = w)
+  }
+
+  res1 <- nloptr(
+    x0 = x0,
+    eval_f = eval_f_mlr1,
+    opts = opts
+  )
+
+  if (res1$status < 0) {
+    stop(simpleError(paste("NLopt returned an error code:", res1$status, res1$message)))
+  }
+
+  c_hat <- 1 / (1 + res1$solution[1]^2)
+
+  x0 <- rep(.1, ncol(xm))
+
+  eval_f_mlr2 <- function(w) {
+    g_mlr2_list(x = xm, s = s, w = w, c_hat = c_hat)
+  }
+
+  res2 <- nloptr(
+    x0 = x0,
+    eval_f = eval_f_mlr2,
+    opts = opts
+  )
+
+  if (res2$status < 0) {
+    stop(simpleError(paste("NLopt returned an error code:", res2$status, res2$message)))
+  }
+
+  coefs <- res2$solution
+  names(coefs) <- colnames(xm)
+  return(coefs)
+}
