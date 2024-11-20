@@ -154,7 +154,7 @@ slr <- function(x, y) {
 }
 
 
-mlr <- function(x, s) {
+mlr <- function(x, s, ret_c = FALSE) {
   xm <- cbind(intercept = 1, as.matrix(x))
   x0 <- rep(0.1, ncol(xm) + 1)
 
@@ -197,5 +197,6 @@ mlr <- function(x, s) {
 
   coefs <- res2$solution
   names(coefs) <- colnames(xm)
+  if (ret_c) coefs <- c(c_hat = c_hat, coefs)
   return(coefs)
 }
