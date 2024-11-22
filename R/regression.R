@@ -1,8 +1,3 @@
-library(tidyverse)
-library(nloptr)
-
-
-
 #' Numerically stable log(plogis(x))
 #'
 #' This is a helper function to make logistic regression loss numerically stable.
@@ -13,7 +8,6 @@ library(nloptr)
 #' @param x Vector of numbers
 #'
 #' @return Vector of results
-#' @export
 #'
 #' @examples
 logsig <- function(x) {
@@ -43,7 +37,6 @@ logsig <- function(x) {
 #' @param y Dependent variable: [0, 1]. Should be the same length as t.
 #'
 #' @return Vector of outputs
-#' @export
 #'
 #' @examples
 sigm_b <- function(t, y) {
@@ -62,6 +55,13 @@ sigm_b <- function(t, y) {
 
 
 
+#' Numerically stable log(1/(z + exp(-x)))
+#'
+#' @param z Number
+#' @param x Number
+#'
+#' @return log(1/(z + exp(-x)))
+#' @examples
 logNpexp <- function(z, x) {
   ex <- exp(-x)
   ifelse(z > ex, log(z) + log1p(ex / z), -x + log1p(z * exp(x)))
@@ -78,7 +78,6 @@ logNpexp <- function(z, x) {
 #' @param w Vector of model weight. This parameter will be optimised by NLopt.
 #'
 #' @return List of functions: objective and gradient
-#' @export
 #'
 #' @examples
 g_slr_list <- function(x, y, w) {
@@ -121,6 +120,7 @@ g_mlr2_list <- function(x, s, w, c_hat) {
 #' @param y Vector of binary ([0, 1]) class assignments.
 #'
 #' @return Vector of coefficients after fitting the model.
+#' @import nloptr
 #' @export
 #'
 #' @examples
@@ -138,7 +138,7 @@ slr <- function(x, y) {
     "xtol_rel" = 1.0e-12, "maxeval" = 1e4
   )
 
-  res <- nloptr(
+  res <- nloptr::nloptr(
     x0 = x0,
     eval_f = eval_f_list,
     opts = opts
@@ -154,6 +154,21 @@ slr <- function(x, y) {
 }
 
 
+#' Simple Logistic Regression
+#'
+#' Implementation based on Jaskie et al., 2019.
+#'
+#' Jaskie, Kristen, Charles Elkan, and Andreas Spanias. "A modified logistic regression for positive and unlabeled learning." 2019 53rd Asilomar Conference on Signals, Systems, and Computers. IEEE, 2019.
+#'
+#' @param x NxP matrix-compatible table with independent variables.
+#' @param s Vector of binary ([0, 1]) class assignments with 1 corresponding to positive-unlabeled and 0 to unlabelled observations.
+#' @param ret_c Logical. Whether or not to return the estimated c - probability of positive sample to be unlabeled
+#'
+#' @return Named vector of coefficients. If `ret_c = TRUE` first element is `c_hat`.
+#' @import nloptr
+#' @export
+#'
+#' @examples
 mlr <- function(x, s, ret_c = FALSE) {
   xm <- cbind(intercept = 1, as.matrix(x))
   x0 <- rep(0.1, ncol(xm) + 1)
@@ -167,7 +182,7 @@ mlr <- function(x, s, ret_c = FALSE) {
     g_mlr1_list(x = xm, s = s, w = w)
   }
 
-  res1 <- nloptr(
+  res1 <- nloptr::nloptr(
     x0 = x0,
     eval_f = eval_f_mlr1,
     opts = opts
@@ -185,7 +200,7 @@ mlr <- function(x, s, ret_c = FALSE) {
     g_mlr2_list(x = xm, s = s, w = w, c_hat = c_hat)
   }
 
-  res2 <- nloptr(
+  res2 <- nloptr::nloptr(
     x0 = x0,
     eval_f = eval_f_mlr2,
     opts = opts

@@ -1,11 +1,16 @@
 Package: PuMLR
 Type: Package
-Title: What the Package Does (Title Case)
+Title: Implementation of the Modified Logistic Regression for positive-unlabeled learning by Jaskie et al.
 Version: 0.1.0
-Author: Who wrote it
-Maintainer: The package maintainer <yourself@somewhere.net>
-Description: More about what it does (maybe more than one line)
-    Use four spaces when indenting paragraphs within the Description.
-License: What license is it under?
+Author: Maksim Kholmatov
+Maintainer: Maksim Kholmatov <maksim.holmatov@gmail.com>
+Description: Implementation of the Modified Logistic Regression for positive-unlabeled learning by Jaskie et el.
+    Fits either Simple Logistic Regression or Modified Logistic Regression via NLopt.
+License: GPL-2 + file LICENSE
+URL: https://github.com/maxim-h/PuMLR
+BugReports: https://github.com/maxim-h/PuMLR/issues
+Imports:
+    nloptr
 Encoding: UTF-8
 LazyData: true
+RoxygenNote: 7.3.2
