@@ -4,12 +4,12 @@
 \alias{mlr}
 \title{Simple Logistic Regression}
 \usage{
-mlr(x, s, ret_c = FALSE)
+mlr(x, y, ret_c = FALSE)
 }
 \arguments{
 \item{x}{NxP matrix-compatible table with independent variables.}
 
-\item{s}{Vector of binary ([0, 1]) class assignments with 1 corresponding to positive-unlabeled and 0 to unlabelled observations.}
+\item{y}{Vector of binary ([0, 1]) class assignments with 1 corresponding to positive-unlabeled and 0 to unlabelled observations. Denoted as `s` in Jaskie et al.}
 
 \item{ret_c}{Logical. Whether or not to return the estimated c - probability of positive sample to be unlabeled}
 }

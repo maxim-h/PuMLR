@@ -161,7 +161,7 @@ slr <- function(x, y) {
 #' Jaskie, Kristen, Charles Elkan, and Andreas Spanias. "A modified logistic regression for positive and unlabeled learning." 2019 53rd Asilomar Conference on Signals, Systems, and Computers. IEEE, 2019.
 #'
 #' @param x NxP matrix-compatible table with independent variables.
-#' @param s Vector of binary ([0, 1]) class assignments with 1 corresponding to positive-unlabeled and 0 to unlabelled observations.
+#' @param y Vector of binary ([0, 1]) class assignments with 1 corresponding to positive-unlabeled and 0 to unlabelled observations. Denoted as `s` in Jaskie et al.
 #' @param ret_c Logical. Whether or not to return the estimated c - probability of positive sample to be unlabeled
 #'
 #' @return Named vector of coefficients. If `ret_c = TRUE` first element is `c_hat`.
@@ -169,7 +169,7 @@ slr <- function(x, y) {
 #' @export
 #'
 #' @examples
-mlr <- function(x, s, ret_c = FALSE) {
+mlr <- function(x, y, ret_c = FALSE) {
   xm <- cbind(intercept = 1, as.matrix(x))
   x0 <- rep(0.1, ncol(xm) + 1)
 
@@ -179,7 +179,7 @@ mlr <- function(x, s, ret_c = FALSE) {
   )
 
   eval_f_mlr1 <- function(w) {
-    g_mlr1_list(x = xm, s = s, w = w)
+    g_mlr1_list(x = xm, s = y, w = w)
   }
 
   res1 <- nloptr::nloptr(
@@ -197,7 +197,7 @@ mlr <- function(x, s, ret_c = FALSE) {
   x0 <- rep(.1, ncol(xm))
 
   eval_f_mlr2 <- function(w) {
-    g_mlr2_list(x = xm, s = s, w = w, c_hat = c_hat)
+    g_mlr2_list(x = xm, s = y, w = w, c_hat = c_hat)
   }
 
   res2 <- nloptr::nloptr(
