@@ -134,7 +134,6 @@ slr <- function(x, y) {
 
   opts <- list(
     "algorithm" = "NLOPT_LD_LBFGS",
-    # opts <- list("algorithm" = "NLOPT_LN_COBYLA",
     "xtol_rel" = 1.0e-12, "maxeval" = 1e4
   )
 
@@ -173,6 +172,9 @@ mlr <- function(x, y, ret_c = FALSE) {
   xm <- cbind(intercept = 1, as.matrix(x))
   x0 <- rep(0.1, ncol(xm) + 1)
 
+  if (sum(y) == 0) {
+    stop(simpleError(paste("No positive observations in data")))
+  }
   opts <- list(
     "algorithm" = "NLOPT_LD_LBFGS",
     "xtol_rel" = 1.0e-12, "maxeval" = 1e4
@@ -189,7 +191,8 @@ mlr <- function(x, y, ret_c = FALSE) {
   )
 
   if (res1$status < 0) {
-    stop(simpleError(paste("NLopt returned an error code:", res1$status, res1$message)))
+    warning("Numbers of observations per class: ", table(y), call. = F)
+    stop(simpleError(paste("NLopt returned an error code from step1:", res1$status, res1$message)))
   }
 
   c_hat <- 1 / (1 + res1$solution[1]^2)
@@ -207,7 +210,8 @@ mlr <- function(x, y, ret_c = FALSE) {
   )
 
   if (res2$status < 0) {
-    stop(simpleError(paste("NLopt returned an error code:", res2$status, res2$message)))
+    warning("Numbers of observations per class: ", table(y), call. = F)
+    stop(simpleError(paste("NLopt returned an error code from step2:", res2$status, res2$message)))
   }
 
   coefs <- res2$solution
