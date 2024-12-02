@@ -2,7 +2,7 @@
 % Please edit documentation in R/regression.R
 \name{logsig}
 \alias{logsig}
-\title{Numerically stable log(plogis(x))}
+\title{Numerically stable log(plogis(x)) := -log1p(exp(-x))}
 \usage{
 logsig(x)
 }

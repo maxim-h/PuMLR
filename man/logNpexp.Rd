@@ -2,18 +2,18 @@
 % Please edit documentation in R/regression.R
 \name{logNpexp}
 \alias{logNpexp}
-\title{Numerically stable log(1/(z + exp(-x)))}
+\title{Numerically stable log(n + exp(x))}
 \usage{
-logNpexp(z, x)
+logNpexp(n, x)
 }
 \arguments{
-\item{z}{Number}
+\item{n}{Number}
 
 \item{x}{Number}
 }
 \value{
-log(1/(z + exp(-x)))
+log(1/(n + exp(-x)))
 }
 \description{
-Numerically stable log(1/(z + exp(-x)))
+Numerically stable log(n + exp(x))
 }

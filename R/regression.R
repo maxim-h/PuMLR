@@ -1,4 +1,4 @@
-#' Numerically stable log(plogis(x))
+#' Numerically stable log(plogis(x)) := -log1p(exp(-x))
 #'
 #' This is a helper function to make logistic regression loss numerically stable.
 #' Based on [this blog](https://fa.bianp.net/blog/2019/evaluate_logistic/) by Fabian Pedregosa
@@ -55,16 +55,38 @@ sigm_b <- function(t, y) {
 
 
 
-#' Numerically stable log(1/(z + exp(-x)))
+#' Numerically stable log(n + exp(x))
 #'
-#' @param z Number
+#' @param n Number
 #' @param x Number
 #'
-#' @return log(1/(z + exp(-x)))
+#' @return log(1/(n + exp(-x)))
 #' @examples
-logNpexp <- function(z, x) {
-  ex <- exp(-x)
-  ifelse(z > ex, log(z) + log1p(ex / z), -x + log1p(z * exp(x)))
+logNpexp <- Vectorize(FUN = function(n, x) {
+  n <- c(n)
+  x <- (x)
+  ifelse(
+    test = n == 0,
+    yes = x,
+    no = max(x,log(n))+log(n * exp(-max(x,log(n)))+exp(x-max(x,log(n))))
+    )
+})
+
+
+#' Numerically stable exp(x)/(n + exp(x))
+#'
+#' @param n Number
+#' @param x Number
+#'
+#' @return
+#'
+#' @examples
+exp_by_npexp <- function(n, x) {
+  ifelse(
+    test = x > 0,
+    yes = 1/(1+n*exp(-x)),
+    no = exp(x)/(n+exp(x))
+    )
 }
 
 
@@ -93,23 +115,23 @@ g_slr_list <- function(x, y, w) {
 g_mlr1_list <- function(x, s, w) {
   w_lr <- w[2:length(w)]
   b <- w[1]
-  t <- x %*% w_lr
+  t <- -1* x %*% w_lr
   list(
     "objective" = -sum(-s * logNpexp(1 + b^2, t) + (1 - s) * (logNpexp(b^2, t) - logNpexp(1 + b^2, t))),
     "gradient" = -c(
-      sum((1 - s) * (2 * b) / (b^2 + exp(-t)) - 2 * b / (1 + b^2 + exp(-t))),
-      t(x) %*% (exp(-t) * (1 / (1 + b^2 + exp(-t)) + (s - 1) / (b^2 + exp(-t))))
+      sum((1 - s) * (2 * b) / (b^2 + exp(t)) - 2 * b / (1 + b^2 + exp(t))),
+      t(x) %*% (exp(t) * (1 / (1 + b^2 + exp(t)) + (s - 1) / (b^2 + exp(t))))
     )
   )
 }
 
 
 g_mlr2_list <- function(x, s, w, c_hat) {
-  t <- x %*% w
+  t <- -1* x %*% w
   logCpexpT <- logNpexp(1 - c_hat, t)
   list(
-    "objective" = -sum(s * (log(c_hat) - logCpexpT) + logCpexpT + logsig(t)),
-    "gradient" = -c(t(x) %*% ((s - 1) * (exp(-t) / (1 - c_hat + exp(-t))) + (exp(-t) / (1 + exp(-t)))))
+    "objective" = -sum(s * (log(c_hat) - logCpexpT) + logCpexpT + logsig(-t)),
+    "gradient" = -c(t(x) %*% ((s - 1) * exp_by_npexp(1 - c_hat, t) + exp_by_npexp(1, t)))
   )
 }
 
@@ -134,7 +156,7 @@ slr <- function(x, y) {
 
   opts <- list(
     "algorithm" = "NLOPT_LD_LBFGS",
-    "xtol_rel" = 1.0e-12, "maxeval" = 1e4
+    "xtol_rel" = 1.0e-12
   )
 
   res <- nloptr::nloptr(
@@ -170,14 +192,14 @@ slr <- function(x, y) {
 #' @examples
 mlr <- function(x, y, ret_c = FALSE) {
   xm <- cbind(intercept = 1, as.matrix(x))
-  x0 <- rep(0.1, ncol(xm) + 1)
+  x0 <- c(0.5, rep(0, ncol(xm)))
 
   if (sum(y) == 0) {
     stop(simpleError(paste("No positive observations in data")))
   }
   opts <- list(
     "algorithm" = "NLOPT_LD_LBFGS",
-    "xtol_rel" = 1.0e-12, "maxeval" = 1e4
+    "xtol_rel" = 1.0e-12
   )
 
   eval_f_mlr1 <- function(w) {
@@ -187,17 +209,19 @@ mlr <- function(x, y, ret_c = FALSE) {
   res1 <- nloptr::nloptr(
     x0 = x0,
     eval_f = eval_f_mlr1,
+    lb = c(.Machine$double.eps, rep(-Inf, ncol(xm))),
     opts = opts
   )
 
   if (res1$status < 0) {
-    warning("Numbers of observations per class: ", table(y), call. = F)
+    tb <- table(y)
+    warning("Numbers of observations per class: 0: ", tb["0"], " 1: ", tb["1"], call. = F)
     stop(simpleError(paste("NLopt returned an error code from step1:", res1$status, res1$message)))
   }
 
   c_hat <- 1 / (1 + res1$solution[1]^2)
 
-  x0 <- rep(.1, ncol(xm))
+  x0 <- rep(0, ncol(xm))
 
   eval_f_mlr2 <- function(w) {
     g_mlr2_list(x = xm, s = y, w = w, c_hat = c_hat)
