@@ -120,7 +120,7 @@ g_mlr1_list <- function(x, s, w) {
     "objective" = -sum(-s * logNpexp(1 + b^2, t) + (1 - s) * (logNpexp(b^2, t) - logNpexp(1 + b^2, t))),
     "gradient" = -c(
       sum((1 - s) * (2 * b) / (b^2 + exp(t)) - 2 * b / (1 + b^2 + exp(t))),
-      t(x) %*% (exp(t) * (1 / (1 + b^2 + exp(t)) + (s - 1) / (b^2 + exp(t))))
+      t(x) %*% (exp_by_npexp(1 + b^2, t) + (s - 1) * exp_by_npexp(b^2, t))
     )
   )
 }
