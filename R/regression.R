@@ -199,7 +199,9 @@ mlr <- function(x, y, ret_c = FALSE) {
   }
   opts <- list(
     "algorithm" = "NLOPT_LD_LBFGS",
-    "xtol_rel" = 1.0e-12
+    "xtol_rel" = 1.0e-12,
+    # "print_level" = 3,
+    "maxeval" = -1 # objective based on `b` can bounce around for a while.
   )
 
   eval_f_mlr1 <- function(w) {
