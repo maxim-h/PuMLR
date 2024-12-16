@@ -62,15 +62,15 @@ sigm_b <- function(t, y) {
 #'
 #' @return log(1/(n + exp(-x)))
 #' @examples
-logNpexp <- Vectorize(FUN = function(n, x) {
+logNpexp <- function(n, x) {
   n <- c(n)
-  x <- (x)
-  ifelse(
-    test = n == 0,
-    yes = x,
-    no = max(x,log(n))+log(n * exp(-max(x,log(n)))+exp(x-max(x,log(n))))
-    )
-})
+  x <- c(x)
+  if (n == 0) {
+    x
+  } else {
+    pmax(x, log(n)) + log(n * exp(-pmax(x, log(n)))+exp(x - pmax(x, log(n))))
+  }
+}
 
 
 #' Numerically stable exp(x)/(n + exp(x))
@@ -116,10 +116,12 @@ g_mlr1_list <- function(x, s, w) {
   w_lr <- w[2:length(w)]
   b <- w[1]
   t <- -1* x %*% w_lr
+  expt <- exp(t)
+  lNexp1pBsqT <- logNpexp(1 + b^2, t)
   list(
-    "objective" = -sum(-s * logNpexp(1 + b^2, t) + (1 - s) * (logNpexp(b^2, t) - logNpexp(1 + b^2, t))),
+    "objective" = -sum(-s * lNexp1pBsqT + (1 - s) * (logNpexp(b^2, t) - lNexp1pBsqT)),
     "gradient" = -c(
-      sum((1 - s) * (2 * b) / (b^2 + exp(t)) - 2 * b / (1 + b^2 + exp(t))),
+      sum((1 - s) * (2 * b) / (b^2 + expt) - 2 * b / (1 + b^2 + expt)),
       t(x) %*% (exp_by_npexp(1 + b^2, t) + (s - 1) * exp_by_npexp(b^2, t))
     )
   )
