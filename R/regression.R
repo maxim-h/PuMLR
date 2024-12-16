@@ -68,7 +68,8 @@ logNpexp <- function(n, x) {
   if (n == 0) {
     x
   } else {
-    pmax(x, log(n)) + log(n * exp(-pmax(x, log(n)))+exp(x - pmax(x, log(n))))
+    pm <- pmax.int(x, log(n))
+    pm + log(n * exp(-pm)+exp(x - pm))
   }
 }
 
@@ -82,11 +83,11 @@ logNpexp <- function(n, x) {
 #'
 #' @examples
 exp_by_npexp <- function(n, x) {
-  ifelse(
-    test = x > 0,
-    yes = 1/(1+n*exp(-x)),
-    no = exp(x)/(n+exp(x))
-    )
+  res <- double(length = length(x))
+  cnd <-  x > 0
+  res[cnd] <- 1/(1+n*exp(-x[cnd]))
+  res[!cnd] <- 1/(n/exp(x[!cnd]) + 1)
+  res
 }
 
 
@@ -107,7 +108,7 @@ g_slr_list <- function(x, y, w) {
   s <- sigm_b(t, y) # might be unnecessary in R. exp doesn't overflow
   list(
     "objective" = sum(-logsig(t) + (1 - y) * (t)),
-    "gradient" = c(t(x) %*% s)
+    "gradient" = c(crossprod(x = x, y = s))
   )
 }
 
@@ -122,7 +123,7 @@ g_mlr1_list <- function(x, s, w) {
     "objective" = -sum(-s * lNexp1pBsqT + (1 - s) * (logNpexp(b^2, t) - lNexp1pBsqT)),
     "gradient" = -c(
       sum((1 - s) * (2 * b) / (b^2 + expt) - 2 * b / (1 + b^2 + expt)),
-      t(x) %*% (exp_by_npexp(1 + b^2, t) + (s - 1) * exp_by_npexp(b^2, t))
+      crossprod(x = x, y = (exp_by_npexp(1 + b^2, t) + (s - 1) * exp_by_npexp(b^2, t)))
     )
   )
 }
@@ -133,7 +134,7 @@ g_mlr2_list <- function(x, s, w, c_hat) {
   logCpexpT <- logNpexp(1 - c_hat, t)
   list(
     "objective" = -sum(s * (log(c_hat) - logCpexpT) + logCpexpT + logsig(-t)),
-    "gradient" = -c(t(x) %*% ((s - 1) * exp_by_npexp(1 - c_hat, t) + exp_by_npexp(1, t)))
+    "gradient" = -c(crossprod(x = x, y = ((s - 1) * exp_by_npexp(1 - c_hat, t) + exp_by_npexp(1, t))))
   )
 }
 
