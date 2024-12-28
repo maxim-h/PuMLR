@@ -149,7 +149,7 @@ g_mlr2_list <- function(x, s, w, c_hat) {
 #' @export
 #'
 #' @examples
-slr <- function(x, y) {
+slr <- function(x, y, print_level = NULL) {
   xm <- cbind(intercept = 1, as.matrix(x))
   x0 <- rep(0, ncol(xm))
 
@@ -159,7 +159,8 @@ slr <- function(x, y) {
 
   opts <- list(
     "algorithm" = "NLOPT_LD_LBFGS",
-    "xtol_rel" = 1.0e-12
+    "xtol_rel" = 1.0e-12,
+    "print_level" = print_level
   )
 
   res <- nloptr::nloptr(
@@ -193,7 +194,7 @@ slr <- function(x, y) {
 #' @export
 #'
 #' @examples
-mlr <- function(x, y, ret_c = FALSE) {
+mlr <- function(x, y, ret_c = FALSE, print_level = NULL) {
   xm <- cbind(intercept = 1, as.matrix(x))
   x0 <- c(0.5, rep(0, ncol(xm)))
 
@@ -203,7 +204,7 @@ mlr <- function(x, y, ret_c = FALSE) {
   opts <- list(
     "algorithm" = "NLOPT_LD_LBFGS",
     "xtol_rel" = 1.0e-12,
-    # "print_level" = 3,
+    "print_level" = print_level,
     "maxeval" = -1 # objective based on `b` can bounce around for a while.
   )
 
