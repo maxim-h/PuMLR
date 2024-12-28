@@ -239,7 +239,8 @@ mlr <- function(x, y, ret_c = FALSE) {
   )
 
   if (res2$status < 0) {
-    warning("Numbers of observations per class: ", table(y), call. = F)
+    tb <- table(y)
+    warning("Numbers of observations per class: 0: ", tb["0"], " 1: ", tb["1"], call. = F)
     stop(simpleError(paste("NLopt returned an error code from step2:", res2$status, res2$message)))
   }
 
