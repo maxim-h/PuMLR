@@ -250,3 +250,60 @@ mlr <- function(x, y, ret_c = FALSE, print_level = NULL) {
   if (ret_c) coefs <- c(c_hat = c_hat, coefs)
   return(coefs)
 }
+
+mlr_ref <- function(x, y, ret_c = TRUE, print_level = NULL) {
+  xm <- cbind(intercept = 1, as.matrix(x))
+  x0 <- c(0.5, rep(0, ncol(xm)))
+
+  if (sum(y) == 0) {
+    stop(simpleError(paste("No positive observations in data")))
+  }
+  opts <- list(
+    "algorithm" = "NLOPT_LD_LBFGS",
+    "xtol_rel" = 1.0e-12,
+    "print_level" = print_level,
+    "maxeval" = -1 # objective based on `b` can bounce around for a while.
+  )
+
+  eval_f_mlr1 <- function(w) {
+    g_mlr1_list(x = xm, s = y, w = w)
+  }
+
+  res1 <- nloptr::nloptr(
+    x0 = x0,
+    eval_f = eval_f_mlr1,
+    lb = c(.Machine$double.eps, rep(-Inf, ncol(xm))),
+    opts = opts
+  )
+
+  if (res1$status < 0) {
+    tb <- table(y)
+    warning("Numbers of observations per class: 0: ", tb["0"], " 1: ", tb["1"], call. = F)
+    stop(simpleError(paste("NLopt returned an error code from step1:", res1$status, res1$message)))
+  }
+
+  c_hat <- 1 / (1 + res1$solution[1]^2)
+
+  # x0 <- rep(0, ncol(xm))
+  #
+  # eval_f_mlr2 <- function(w) {
+  #   g_mlr2_list(x = xm, s = y, w = w, c_hat = c_hat)
+  # }
+  #
+  # res2 <- nloptr::nloptr(
+  #   x0 = x0,
+  #   eval_f = eval_f_mlr2,
+  #   opts = opts
+  # )
+  #
+  # if (res2$status < 0) {
+  #   tb <- table(y)
+  #   warning("Numbers of observations per class: 0: ", tb["0"], " 1: ", tb["1"], call. = F)
+  #   stop(simpleError(paste("NLopt returned an error code from step2:", res2$status, res2$message)))
+  # }
+
+  coefs <- res1$solution[2:length(res1$solution)]
+  names(coefs) <- colnames(xm)
+  if (ret_c) coefs <- c(c_hat = c_hat, coefs)
+  return(coefs)
+}
