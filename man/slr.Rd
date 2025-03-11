@@ -4,7 +4,7 @@
 \alias{slr}
 \title{Simple Logistic Regression}
 \usage{
-slr(x, y)
+slr(x, y, print_level = NULL)
 }
 \arguments{
 \item{x}{NxP matrix-compatible table with independent variables.}

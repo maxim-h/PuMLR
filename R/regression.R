@@ -251,6 +251,19 @@ mlr <- function(x, y, ret_c = FALSE, print_level = NULL) {
   return(coefs)
 }
 
+#' Title
+#'
+#' @param x NxP matrix-compatible table with independent variables.
+#' @param y Vector of binary ([0, 1]) class assignments with 1 corresponding to positive-unlabeled and 0 to unlabelled observations. Denoted as `s` in Jaskie et al.
+#' @param ret_c Logical. Whether or not to return the estimated c - probability of positive sample to be unlabeled
+#' @param print_level Character. Print level for NLopt debugging
+#'
+#' @return Named vector of coefficients. If `ret_c = TRUE` first element is `c_hat`.
+#'
+#' @import nloptr
+#' @export
+#'
+#' @examples
 mlr_ref <- function(x, y, ret_c = TRUE, print_level = NULL) {
   xm <- cbind(intercept = 1, as.matrix(x))
   x0 <- c(0.5, rep(0, ncol(xm)))
