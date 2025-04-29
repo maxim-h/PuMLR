@@ -2,7 +2,7 @@
 % Please edit documentation in R/regression.R
 \name{mlr}
 \alias{mlr}
-\title{Simple Logistic Regression}
+\title{Modified Logistic Regression}
 \usage{
 mlr(x, y, ret_c = FALSE, print_level = NULL)
 }
