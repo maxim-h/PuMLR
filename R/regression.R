@@ -113,28 +113,41 @@ g_slr_list <- function(x, y, w) {
 }
 
 
-g_mlr1_list <- function(x, s, w) {
+#' Modifie Logistic Regression objective and gradient
+#'
+#' @param x NxP matrix of independent variables. First column should be 1 - for intercept
+#' @param s Vector of observations. 0 or 1.
+#' @param w Vector of model weight. This parameter will be optimised by NLopt.
+#' @param lambda Numeric. For L2 penalty.
+#'
+#' @returns List of functions: objective and gradient
+#'
+#' @examples
+g_mlr1_list <- function(x, s, w, lambda) {
   w_lr <- w[2:length(w)]
   b <- w[1]
   t <- -1* x %*% w_lr
   expt <- exp(t)
   lNexp1pBsqT <- logNpexp(1 + b^2, t)
+
+  # Standard objective of MLR
+  obj = -sum(-s * lNexp1pBsqT + (1 - s) * (logNpexp(b^2, t) - lNexp1pBsqT))
+
+  # Add L2 penalty on w_lr only
+  obj <- obj + 0.5 * lambda * sum(w_lr^2)
+
+  grad_b <- -sum((1 - s) * (2 * b) / (b^2 + expt) - 2 * b / (1 + b^2 + expt))
+  grad_w <- -crossprod(x = x, y = (exp_by_npexp(1 + b^2, t) + (s - 1) * exp_by_npexp(b^2, t)))
+
+  # Add gradient penalty on w_lr
+  grad_w <- grad_w + lambda * w_lr
+
   list(
-    "objective" = -sum(-s * lNexp1pBsqT + (1 - s) * (logNpexp(b^2, t) - lNexp1pBsqT)),
-    "gradient" = -c(
-      sum((1 - s) * (2 * b) / (b^2 + expt) - 2 * b / (1 + b^2 + expt)),
-      crossprod(x = x, y = (exp_by_npexp(1 + b^2, t) + (s - 1) * exp_by_npexp(b^2, t)))
+    "objective" = obj,
+    "gradient" = c(
+      grad_b,
+      as.numeric(grad_w)
     )
-  )
-}
-
-
-g_mlr2_list <- function(x, s, w, c_hat) {
-  t <- -1* x %*% w
-  logCpexpT <- logNpexp(1 - c_hat, t)
-  list(
-    "objective" = -sum(s * (log(c_hat) - logCpexpT) + logCpexpT + logsig(-t)),
-    "gradient" = -c(crossprod(x = x, y = ((s - 1) * exp_by_npexp(1 - c_hat, t) + exp_by_npexp(1, t))))
   )
 }
 
@@ -188,13 +201,15 @@ slr <- function(x, y, print_level = NULL) {
 #' @param x NxP matrix-compatible table with independent variables.
 #' @param y Vector of binary ([0, 1]) class assignments with 1 corresponding to positive-unlabeled and 0 to unlabelled observations. Denoted as `s` in Jaskie et al.
 #' @param ret_c Logical. Whether or not to return the estimated c - probability of positive sample to be unlabeled
+#' @param print_level Integer. Print level for NLopt. Used for debugging purposes.
+#' @param lambda Numeric. Lambda parameter for L2 penalty. Default 1e-2 is intended just to condition the solver in cases of multicollinearity.
 #'
 #' @return Named vector of coefficients. If `ret_c = TRUE` first element is `c_hat`.
 #' @import nloptr
 #' @export
 #'
 #' @examples
-mlr <- function(x, y, ret_c = FALSE, print_level = NULL) {
+mlr <- function(x, y, ret_c = FALSE, print_level = NULL, lambda = 1e-2) {
   xm <- cbind(intercept = 1, as.matrix(x))
   x0 <- c(0.5, rep(0, ncol(xm)))
 
@@ -209,7 +224,7 @@ mlr <- function(x, y, ret_c = FALSE, print_level = NULL) {
   )
 
   eval_f_mlr1 <- function(w) {
-    g_mlr1_list(x = xm, s = y, w = w)
+    g_mlr1_list(x = xm, s = y, w = w, lambda = lambda)
   }
 
   res1 <- nloptr::nloptr(

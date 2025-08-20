@@ -4,7 +4,7 @@
 \alias{mlr}
 \title{Modified Logistic Regression}
 \usage{
-mlr(x, y, ret_c = FALSE, print_level = NULL)
+mlr(x, y, ret_c = FALSE, print_level = NULL, lambda = 0.01)
 }
 \arguments{
 \item{x}{NxP matrix-compatible table with independent variables.}
@@ -12,6 +12,10 @@ mlr(x, y, ret_c = FALSE, print_level = NULL)
 \item{y}{Vector of binary ([0, 1]) class assignments with 1 corresponding to positive-unlabeled and 0 to unlabelled observations. Denoted as `s` in Jaskie et al.}
 
 \item{ret_c}{Logical. Whether or not to return the estimated c - probability of positive sample to be unlabeled}
+
+\item{print_level}{Integer. Print level for NLopt. Used for debugging purposes.}
+
+\item{lambda}{Numeric. Lambda parameter for L2 penalty. Default 1e-2 is intended just to condition the solver in cases of multicollinearity.}
 }
 \value{
 Named vector of coefficients. If `ret_c = TRUE` first element is `c_hat`.

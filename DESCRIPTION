@@ -1,7 +1,7 @@
 Package: PuMLR
 Type: Package
 Title: Implementation of the Modified Logistic Regression for positive-unlabeled learning by Jaskie et al.
-Version: 0.1.0
+Version: 0.2.0
 Author: Maksim Kholmatov
 Maintainer: Maksim Kholmatov <maksim.holmatov@gmail.com>
 Description: Implementation of the Modified Logistic Regression for positive-unlabeled learning by Jaskie et el.
