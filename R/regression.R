@@ -99,16 +99,17 @@ exp_by_npexp <- function(n, x) {
 #' @param x NxP matrix of independent variables. First column should be 1 - for intercept
 #' @param y Vector of observations. 0 or 1.
 #' @param w Vector of model weight. This parameter will be optimised by NLopt.
+#' @param lambda Numeric. For L2 penalty.
 #'
 #' @return List of functions: objective and gradient
 #'
 #' @examples
-g_slr_list <- function(x, y, w) {
+g_slr_list <- function(x, y, w, lambda) {
   t <- x %*% w
   s <- sigm_b(t, y) # might be unnecessary in R. exp doesn't overflow
   list(
-    "objective" = sum(-logsig(t) + (1 - y) * (t)),
-    "gradient" = c(crossprod(x = x, y = s))
+    "objective" = sum(-logsig(t) + (1 - y) * (t)) + 0.5 * lambda * sum(w^2),
+    "gradient" = c(crossprod(x = x, y = s)) + lambda * w
   )
 }
 
@@ -156,18 +157,19 @@ g_mlr1_list <- function(x, s, w, lambda) {
 #'
 #' @param x NxP matrix-compatible table with independent variables.
 #' @param y Vector of binary ([0, 1]) class assignments.
+#' @param lambda Numeric. Lambda parameter for L2 penalty. Default 1e-2 is intended just to condition the solver in cases of multicollinearity.
 #'
 #' @return Vector of coefficients after fitting the model.
 #' @import nloptr
 #' @export
 #'
 #' @examples
-slr <- function(x, y, print_level = NULL) {
+slr <- function(x, y, print_level = NULL, lambda = 1e-2) {
   xm <- cbind(intercept = 1, as.matrix(x))
   x0 <- rep(0, ncol(xm))
 
   eval_f_list <- function(w) {
-    g_slr_list(x = xm, y = y, w = w)
+    g_slr_list(x = xm, y = y, w = w, lambda = lambda)
   }
 
   opts <- list(
