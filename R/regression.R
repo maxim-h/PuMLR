@@ -83,11 +83,7 @@ logNpexp <- function(n, x) {
 #'
 #' @examples
 exp_by_npexp <- function(n, x) {
-  res <- double(length = length(x))
-  cnd <-  x > 0
-  res[cnd] <- 1/(1+n*exp(-x[cnd]))
-  res[!cnd] <- 1/(n/exp(x[!cnd]) + 1)
-  res
+  1/(1 + n*exp(-x))
 }
 
 
