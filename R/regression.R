@@ -60,7 +60,7 @@ sigm_b <- function(t, y) {
 #' @param n Number
 #' @param x Number
 #'
-#' @return log(1/(n + exp(-x)))
+#' @return log(n + exp(x))
 #' @examples
 logNpexp <- function(n, x) {
   n <- c(n)
