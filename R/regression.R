@@ -125,10 +125,9 @@ g_mlr1_list <- function(x, s, w, lambda) {
   b <- w[1]
   t <- -1* x %*% w_lr
   expt <- exp(t)
-  lNexp1pBsqT <- logNpexp(1 + b^2, t)
 
   # Standard objective of MLR
-  obj = -sum(-s * lNexp1pBsqT + (1 - s) * (logNpexp(b^2, t) - lNexp1pBsqT))
+  obj = sum(logNpexp(1 + b^2, t) - (1 - s) * (logNpexp(b^2, t)))
 
   # Add L2 penalty on w_lr only
   obj <- obj + 0.5 * lambda * sum(w_lr^2)
