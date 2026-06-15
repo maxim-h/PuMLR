@@ -132,7 +132,7 @@ g_mlr1_list <- function(x, s, w, lambda) {
   # Add L2 penalty on w_lr only
   obj <- obj + 0.5 * lambda * sum(w_lr^2)
 
-  grad_b <- -sum((1 - s) * (2 * b) / (b^2 + expt) - 2 * b / (1 + b^2 + expt))
+  grad_b <- -(2 * b)*sum((1 - s) / (b^2 + expt) - 1 / (1 + b^2 + expt))
   grad_w <- -crossprod(x = x, y = (exp_by_npexp(1 + b^2, t) + (s - 1) * exp_by_npexp(b^2, t)))
 
   # Add gradient penalty on w_lr
